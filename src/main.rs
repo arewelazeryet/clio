@@ -51,10 +51,10 @@ async fn main() {
 
     let cloned_state = Arc::clone(&server_state);
     tokio::task::spawn(async move {
-        tracing::info!(interval_minutes = 5, "Initializing cache update loop");
+        tracing::info!(interval_minutes = 1, "Initializing cache update loop");
         let mut interval = tokio::time::interval_at(
-            Instant::now() + Duration::from_mins(5),
-            Duration::from_mins(5),
+            Instant::now() + Duration::from_mins(1),
+            Duration::from_mins(1),
         );
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
