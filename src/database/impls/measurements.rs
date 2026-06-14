@@ -14,7 +14,6 @@ impl Database {
             r#"
 INSERT INTO measurements ( time, stable, lazer )
 VALUES ( to_timestamp($1), $2, $3 )
-ON CONFLICT (time) DO NOTHING
             "#,
         )
         .bind(entry.timestamp as f64)

@@ -1,18 +1,13 @@
 //! Data for bars of stable vs lazer info
 
-use apply::Apply;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 
-use crate::{
-    database::models::MeasurementEntry,
-    server::ServerState,
-    types::{SinglePointResponse, to_response},
-};
+use crate::{server::ServerState, types::SinglePointResponse};
 
 async fn get_current(
     State(state): State<ServerState>,
 ) -> Result<Json<SinglePointResponse>, StatusCode> {
-    let state = state.lock().await;
+    let mut state = state.lock().await;
     let changelog = state
         .get_latest_changelog()
         .await
@@ -25,50 +20,49 @@ async fn get_current(
         "Served current bar data"
     );
 
-    Ok(axum::Json(changelog))
+    Ok(Json(changelog))
 }
 
-async fn get_highest_user_count(State(state): State<ServerState>) -> Json<SinglePointResponse> {
+async fn get_highest_user_count(
+    State(state): State<ServerState>,
+) -> Result<Json<SinglePointResponse>, StatusCode> {
+    let mut state = state.lock().await;
     let response = state
-        .lock()
+        .get_peak_user_count()
         .await
-        .cache()
-        .peak_user_count()
-        .apply(MeasurementEntry::from)
-        .apply(to_response);
+        .inspect_err(|error| tracing::warn!(%error, "Failed to fetch peak user count from cache"))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     tracing::info!("Served peak user count bar data");
 
-    response
+    Ok(Json(response))
 }
 
 async fn get_highest_user_percentage(
     State(state): State<ServerState>,
-) -> Json<SinglePointResponse> {
+) -> Result<Json<SinglePointResponse>, StatusCode> {
+    let mut state = state.lock().await;
     let response = state
-        .lock()
+        .get_peak_user_ratio()
         .await
-        .cache()
-        .peak_user_percentage()
-        .apply(MeasurementEntry::from)
-        .apply(to_response);
+        .inspect_err(|error| tracing::warn!(%error, "Failed to fetch peak ratio from cache"))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     tracing::info!("Served peak ratio bar data");
 
-    response
+    Ok(Json(response))
 }
 
 async fn get_highest_user_count_within_85th_percentile(
     State(state): State<ServerState>,
-) -> Json<SinglePointResponse> {
+) -> Result<Json<SinglePointResponse>, StatusCode> {
+    let mut state = state.lock().await;
     let response = state
-        .lock()
+        .get_peak_user_percentile()
         .await
-        .cache()
-        .peak_percentile_percentage()
-        .apply(MeasurementEntry::from)
-        .apply(to_response);
+        .inspect_err(|error| tracing::warn!(%error, "Failed to fetch peak percentile from cache"))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     tracing::info!("Served peak percentile bar data");
 
-    response
+    Ok(Json(response))
 }
 
 pub fn router() -> Router<ServerState> {

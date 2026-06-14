@@ -15,13 +15,7 @@ mod routes;
 mod server;
 mod types;
 
-#[tokio::main]
-async fn main() {
-    if let Err(error) = CryptoProvider::install_default(ring::default_provider()) {
-        eprintln!("Failed to install rustls crypto provider: {error:?}");
-        return;
-    }
-
+fn setup_logging() {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::new(format!(
             "{}=debug,tower_http=debug,axum::rejection=trace",
@@ -30,6 +24,19 @@ async fn main() {
         .with_line_number(true)
         .with_file(true)
         .init();
+}
+
+#[tokio::main]
+async fn main() {
+    if let Err(error) = CryptoProvider::install_default(ring::default_provider()) {
+        eprintln!("Failed to install rustls crypto provider: {error:?}");
+        return;
+    }
+
+    setup_logging();
+
+    #[allow(clippy::unwrap_used)]
+    dotenvy::dotenv().unwrap();
 
     tracing::info!(
         crate_name = env!("CARGO_CRATE_NAME"),
@@ -69,7 +76,7 @@ async fn main() {
     });
 
     tracing::debug!("Building HTTP router");
-    let app = Router::new()
+    let app: Router = Router::new()
         .nest("/api/bars", routes::bars::router())
         .nest("/api/graphs", routes::graphs::router())
         .layer(tower_http::trace::TraceLayer::new_for_http())

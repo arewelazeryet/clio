@@ -25,3 +25,7 @@ crypto = "0.5.1"
 rustls = { version = "0.23.40", features = ["ring"] }
 tower-http = { version = "0.6.10", features = ["trace"] }
 mimalloc = "0.1.50"
+dotenvy = "0.15.7"
+redis = { version = "1.2.2", features = ["connection-manager", "json", "tokio-comp"] }
+arc-swap = { version = "0.4.0-pre.1" }
+pastey = "0.2.3"

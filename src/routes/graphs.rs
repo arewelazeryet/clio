@@ -12,14 +12,21 @@ use crate::{
     types::{BucketSize, PointLineResponse, RatioRegressionResponse},
 };
 
-pub async fn user_count_graph(State(state): State<ServerState>) -> Json<PointLineResponse> {
-    let response: Json<PointLineResponse> = state.lock().await.cache().daily_user_graph().into();
+pub async fn user_count_graph(
+    State(state): State<ServerState>,
+) -> Result<Json<PointLineResponse>, StatusCode> {
+    let mut state = state.lock().await;
+    let response = state
+        .get_day_user_graph()
+        .await
+        .inspect_err(|error| tracing::warn!(%error, "Failed to fetch daily graph from cache"))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     tracing::info!(
-        points = response.0.timestamp.len(),
+        points = response.timestamp.len(),
         "Served daily graph data"
     );
 
-    response
+    Ok(Json(response))
 }
 
 #[derive(Deserialize, Default)]
@@ -38,7 +45,13 @@ pub async fn history_user_graph(
     match (query.from, query.to) {
         (None, None) => {
             if let BucketSize::Day = query.bucket_size {
-                response = state.lock().await.cache().historical_user_graph().into();
+                response = state
+                    .lock()
+                    .await
+                    .get_history_user_graph()
+                    .await
+                    .inspect_err(|error| tracing::warn!(%error, "Failed to fetch history graph from cache"))
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             } else {
                 response = state
                     .lock()
