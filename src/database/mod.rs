@@ -37,14 +37,6 @@ impl Database {
             .await
             .wrap_err("Failed to start a Postgres transaction")
     }
-
-    pub async fn migrate(&self) -> Result<()> {
-        tracing::trace!("Running migrations");
-        let pool = &self.pool;
-        sqlx::migrate!("./migrations").run(pool).await?;
-
-        Ok(())
-    }
 }
 
 impl<'d, 'p> Executor<'p> for &'d Database {

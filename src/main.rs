@@ -36,7 +36,7 @@ async fn main() {
     setup_logging();
 
     #[allow(clippy::unwrap_used)]
-    dotenvy::dotenv().unwrap();
+    let _ = dotenvy::dotenv();
 
     tracing::info!(
         crate_name = env!("CARGO_CRATE_NAME"),

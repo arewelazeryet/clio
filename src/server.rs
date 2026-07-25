@@ -160,13 +160,6 @@ impl Server {
 
         tracing::debug!("Connecting to database");
         let database = Database::new(&database_url).await?;
-        // Run migrations owo
-        cfg_select! {
-            not(debug_assertions) => {
-                database.migrate().await?;
-            }
-            _ => {}
-        }
 
         tracing::debug!(client_id, "Building osu! API client");
         let client = rosu_v2::OsuBuilder::new()
