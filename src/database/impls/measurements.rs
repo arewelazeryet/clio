@@ -10,15 +10,15 @@ use crate::{
 impl Database {
     #[tracing::instrument(skip(self))]
     pub async fn insert_measurement(&mut self, entry: MeasurementEntry) -> Result<()> {
-        let result = query(
+        let result = query!(
             r#"
-INSERT INTO measurements ( time, stable, lazer )
+INSERT INTO measurements ( inserted_at, stable, lazer )
 VALUES ( to_timestamp($1), $2, $3 )
             "#,
+            entry.timestamp as f64,
+            entry.stable,
+            entry.lazer
         )
-        .bind(entry.timestamp as f64)
-        .bind(entry.stable)
-        .bind(entry.lazer)
         .execute(&*self)
         .await;
 
@@ -38,11 +38,11 @@ VALUES ( to_timestamp($1), $2, $3 )
         let result = query_as::<_, MeasurementEntry>(
             r#"
 SELECT
-    EXTRACT(EPOCH FROM time)::BIGINT AS timestamp,
+    EXTRACT(EPOCH FROM inserted_at)::BIGINT AS timestamp,
     stable,
     lazer
 FROM measurements
-ORDER BY lazer DESC, time ASC
+ORDER BY lazer DESC, inserted_at ASC
 LIMIT 1
             "#,
         )
@@ -64,13 +64,13 @@ LIMIT 1
         let result = query_as::<_, MeasurementEntry>(
             r#"
 SELECT
-    EXTRACT(EPOCH FROM time)::BIGINT AS timestamp,
+    EXTRACT(EPOCH FROM inserted_at)::BIGINT AS timestamp,
     stable,
     lazer
 FROM measurements
 WHERE (stable + lazer) > 5000
 ORDER BY (lazer::DOUBLE PRECISION / NULLIF((stable + lazer)::DOUBLE PRECISION, 0)) DESC,
-         time ASC
+         inserted_at ASC
 LIMIT 1
             "#,
         )
@@ -106,14 +106,14 @@ LIMIT 1
         let peak: MeasurementEntry = query_as(
             r#"
             SELECT
-                EXTRACT(EPOCH FROM time)::BIGINT AS timestamp,
+                EXTRACT(EPOCH FROM inserted_at)::BIGINT AS timestamp,
                 stable,
                 lazer
             FROM measurements
             WHERE ((stable + lazer) > 3000)
               AND lazer > 0 AND stable > 0
               AND (lazer::DOUBLE PRECISION / NULLIF((stable + lazer)::DOUBLE PRECISION, 0)) >= $1
-            ORDER BY lazer DESC, time ASC
+            ORDER BY lazer DESC, inserted_at ASC
             LIMIT 1
             "#,
         )
@@ -143,12 +143,12 @@ LIMIT 1
         let result = query_as::<_, MeasurementEntry>(
             r#"
 SELECT
-    EXTRACT(EPOCH FROM time)::BIGINT AS timestamp,
+    EXTRACT(EPOCH FROM inserted_at)::BIGINT AS timestamp,
     stable,
     lazer
 FROM measurements
-WHERE time >= $1 AND time < $2
-ORDER BY time ASC
+WHERE inserted_at >= $1 AND inserted_at < $2
+ORDER BY inserted_at ASC
             "#,
         )
         .bind(start)
