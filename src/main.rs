@@ -1,8 +1,14 @@
 #![forbid(clippy::unwrap_used)]
-use std::{env, sync::Arc, time::Duration};
+use std::{
+    env,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
+    time::Duration,
+};
 
 use axum::{Router, routing::get};
 use axum_prometheus::PrometheusMetricLayer;
+use color_eyre::eyre::Context;
 use mimalloc::MiMalloc;
 use rustls::crypto::{CryptoProvider, ring};
 use tokio::time::Instant;
@@ -26,6 +32,15 @@ fn setup_logging() {
         .init();
 }
 
+fn prometheus() -> color_eyre::Result<()> {
+    let ip: SocketAddr = ([0, 0, 0, 0], 10101).into();
+    let builder = metrics_exporter_prometheus::PrometheusBuilder::new().with_http_listener(ip);
+
+    builder.install().wrap_err("Failed to install Prometheus")?;
+    tracing::info!(ip = ?ip, "Installing Prometheus");
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     if let Err(error) = CryptoProvider::install_default(ring::default_provider()) {
@@ -34,6 +49,7 @@ async fn main() {
     }
 
     setup_logging();
+    prometheus().unwrap();
 
     #[allow(clippy::unwrap_used)]
     let _ = dotenvy::dotenv();
