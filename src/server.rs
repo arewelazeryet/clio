@@ -192,24 +192,11 @@ impl Server {
         let current_timestamp = Utc::now();
 
         let initial_changelog = self.refresh_latest_changelog().await?;
-        let peak_users = self.refresh_peak_user_count().await?;
-        let peak_ratio = self.refresh_peak_user_ratio().await?;
-        let peak_percentile = self.refresh_peak_user_percentile().await?;
-        let graph_day_users = self.refresh_day_user_graph().await?;
-        let graph_history_users = self.refresh_history_user_graph().await?;
-
-        let day_points = graph_day_users.timestamp.len();
-        let history_points = graph_history_users.timestamp.len();
 
         tracing::info!(
             timestamp = current_timestamp.timestamp(),
             latest_stable = initial_changelog.stable,
             latest_lazer = initial_changelog.lazer,
-            peak_users_timestamp = peak_users.timestamp,
-            peak_ratio_timestamp = peak_ratio.timestamp,
-            peak_percentile_timestamp = peak_percentile.timestamp,
-            day_points,
-            history_points,
             "Application cache update data loaded"
         );
 
@@ -239,46 +226,6 @@ impl Server {
             server.insert_new_entry(entry.clone()).await?;
             entry
         }
-    );
-
-    cache_json_pair!(
-        peak_user_count,
-        key = "arewelazeryet:peak:users",
-        ty = SinglePointResponse,
-        ttl = 300,
-        refresh => |server| server.database().get_user_count_peak().await?.into()
-    );
-
-    cache_json_pair!(
-        peak_user_ratio,
-        key = "arewelazeryet:peak:ratio",
-        ty = SinglePointResponse,
-        ttl = 300,
-        refresh => |server| server.database().get_user_ratio_peak().await?.into()
-    );
-
-    cache_json_pair!(
-        peak_user_percentile,
-        key = "arewelazeryet:peak:percentile",
-        ty = SinglePointResponse,
-        ttl = 300,
-        refresh => |server| server.database().get_user_highest_percentile_peak().await?.into()
-    );
-
-    cache_json_pair!(
-        day_user_graph,
-        key = "arewelazeryet:graph:day",
-        ty = PointLineResponse,
-        ttl = 300,
-        refresh => |server| server.database().get_past_day().await?.into()
-    );
-
-    cache_json_pair!(
-        history_user_graph,
-        key = "arewelazeryet:graph:history",
-        ty = PointLineResponse,
-        ttl = 300,
-        refresh => |server| server.database().get_history(BucketSize::Day).await?.into()
     );
 
     pub fn insert_new_entry(
