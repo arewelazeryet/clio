@@ -23,7 +23,7 @@ fn setup_logging() {
         .with_env_filter(tracing_subscriber::EnvFilter::new(
             env::var("RUST_LOG").unwrap_or_else(|_| {
                 format!(
-                    "{}=debug,tower_http=debug,axum::rejection=trace",
+                    "{}=debug,tower_http=debug,rosu_v2=trace,axum::rejection=trace",
                     env!("CARGO_CRATE_NAME")
                 )
             }),
