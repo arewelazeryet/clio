@@ -20,10 +20,14 @@ mod types;
 
 fn setup_logging() {
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::new(format!(
-            "{}=debug,tower_http=debug,axum::rejection=trace",
-            env!("CARGO_CRATE_NAME")
-        )))
+        .with_env_filter(tracing_subscriber::EnvFilter::new(
+            env::var("RUST_LOG").unwrap_or_else(|_| {
+                format!(
+                    "{}=debug,tower_http=debug,axum::rejection=trace",
+                    env!("CARGO_CRATE_NAME")
+                )
+            }),
+        ))
         .with_line_number(true)
         .with_file(true)
         .init();

@@ -223,6 +223,9 @@ impl Server {
         ty = SinglePointResponse,
         refresh => |server| {
             let entry = fetch_changelog(server.osu()).await?;
+            if entry.lazer == 0 {
+                tracing::warn!(entry = ?entry, "osu!lazer returned 0 users total, investigate");
+            }
             server.insert_new_entry(entry.clone()).await?;
             entry
         }
@@ -239,6 +242,7 @@ impl Server {
 pub async fn fetch_changelog(osu: &Osu) -> Result<SinglePointResponse> {
     tracing::debug!("Fetching changelog stream data from osu! API");
     let stream = osu.changelog_listing().await?;
+    tracing::trace!("Changelog listing (raw): {stream:?}");
     let stream_count = stream.streams.len();
 
     let (stable, lazer) = stream
