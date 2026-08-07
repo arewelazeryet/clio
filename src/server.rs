@@ -231,11 +231,13 @@ impl Server {
         }
     );
 
-    pub fn insert_new_entry(
-        &mut self,
-        entry: SinglePointResponse,
-    ) -> impl Future<Output = Result<()>> {
-        self.database.insert_measurement(entry.into())
+    pub async fn insert_new_entry(&mut self, entry: SinglePointResponse) -> Result<()> {
+        if entry.lazer > 0 {
+            self.database.insert_measurement(entry.into()).await
+        } else {
+            tracing::warn!(entry = ?entry, "Empty lazer response");
+            Ok(())
+        }
     }
 }
 
