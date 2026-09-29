@@ -8,6 +8,7 @@ use std::{
 
 use color_eyre::eyre::Context;
 use mimalloc::MiMalloc;
+use reqwest::Url;
 use rustls::crypto::{CryptoProvider, ring};
 use tokio::time::Instant;
 
@@ -78,12 +79,21 @@ async fn main() {
     );
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
+    let kuma = env::var("KUMA_PUSH_ENDPOINT").unwrap();
     loop {
         interval.tick().await;
 
         tracing::debug!("Starting scheduled cache update");
         if let Err(error) = cloned_state.lock().await.update_cache().await {
             tracing::error!(%error, "Scheduled cache update failed");
+
+            let mut url = Url::parse(&kuma.clone()).unwrap();
+            url.set_query(Some("status=down&msg=DOWN"));
+            let _ = reqwest::get(url).await;
+        } else {
+            let mut url = Url::parse(&kuma.clone()).unwrap();
+            url.set_query(Some("status=up&msg=UP"));
+            let _ = reqwest::get(url).await;
         }
     }
 }
